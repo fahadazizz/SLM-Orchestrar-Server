@@ -55,5 +55,39 @@ A local Orchestrator Server to manage and deploy Small Language Models (SLMs) in
 
 ## Architecture
 
+```mermaid
+graph TD
+    subgraph Client Layer
+        User[Client / User]
+    end
+
+    subgraph Orchestrator Server
+        FastAPI[FastAPI App]
+        Registry[Model Registry]
+        DockerSvc[Docker Service]
+    end
+
+    subgraph Infrastructure
+        DockerEng[Docker Engine]
+
+        subgraph "Isolated Container"
+            Runner[Model Runner]
+            Model[HuggingFace Model]
+        end
+    end
+
+    User -->|1. List Models| FastAPI
+    FastAPI -->|Read Config| Registry
+
+    User -->|2. Run Model| FastAPI
+    FastAPI -->|Start Container| DockerSvc
+    DockerSvc -->|Docker API| DockerEng
+    DockerEng -->|Spin up| Runner
+    Runner -->|Load| Model
+
+    User -->|3. Inference| FastAPI
+    FastAPI -->|Proxy Request| Runner
+```
+
 - **Orchestrator**: FastAPI app managing the lifecycle.
 - **Runner**: A separate Docker image (`orchestrar-runner`) that loads the model using `transformers` and exposes an internal API.
