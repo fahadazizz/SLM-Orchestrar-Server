@@ -57,36 +57,64 @@ A local Orchestrator Server to manage and deploy Small Language Models (SLMs) in
 
 ```mermaid
 graph TD
-    subgraph Client Layer
-        User[Client / User]
+    subgraph Client_Layer [Client Layer]
+        User[User / Client]
+        Postman[Postman / Scripts]
     end
 
-    subgraph Orchestrator Server
-        FastAPI[FastAPI App]
-        Registry[Model Registry]
-        DockerSvc[Docker Service]
+    subgraph Orchestrator_Server [Orchestrator Server (Host: 8000)]
+        direction TB
+        FastAPI_App[FastAPI App]
+
+        subgraph Endpoints
+            E_Models[GET /models]
+            E_Run[POST /run]
+            E_Status[GET /status]
+            E_Stop[POST /stop]
+            E_Inference[POST /inference]
+            E_Health[GET /health]
+        end
+
+        subgraph Services
+            Reg[Model Registry]
+            DockerSvc[Docker Service]
+        end
+
+        FastAPI_App --> E_Models & E_Run & E_Status & E_Stop & E_Inference & E_Health
+        E_Models -->|Read Config| Reg
+        E_Run -->|Start Container| DockerSvc
+        E_Status -->|List Containers| DockerSvc
+        E_Stop -->|Stop Container| DockerSvc
+        E_Inference -->|Proxy Request| DockerSvc
     end
 
-    subgraph Infrastructure
-        DockerEng[Docker Engine]
+    subgraph Docker_Infrastructure [Docker Infrastructure]
+        DockerDaemon[Docker Daemon]
 
-        subgraph "Isolated Container"
-            Runner[Model Runner]
-            Model[HuggingFace Model]
+        subgraph Model_Container [Model Container (Host: 8001+)]
+            direction TB
+            RunnerApp[Runner FastAPI (Port: 8000)]
+
+            subgraph Runner_Endpoints
+                R_Inference[POST /inference]
+                R_Health[GET /health]
+            end
+
+            HF_Model[HuggingFace Model]
+
+            RunnerApp --> R_Inference & R_Health
+            R_Inference -->|Generate| HF_Model
         end
     end
 
-    User -->|1. List Models| FastAPI
-    FastAPI -->|Read Config| Registry
+    %% Flows
+    User -->|HTTP Requests| FastAPI_App
+    Postman -->|HTTP Requests| FastAPI_App
 
-    User -->|2. Run Model| FastAPI
-    FastAPI -->|Start Container| DockerSvc
-    DockerSvc -->|Docker API| DockerEng
-    DockerEng -->|Spin up| Runner
-    Runner -->|Load| Model
+    DockerSvc -->|Docker API (Socket)| DockerDaemon
+    DockerDaemon -->|Spin up| Model_Container
 
-    User -->|3. Inference| FastAPI
-    FastAPI -->|Proxy Request| Runner
+    E_Inference -.->|Proxy HTTP (127.0.0.1:8001)| R_Inference
 ```
 
 - **Orchestrator**: FastAPI app managing the lifecycle.

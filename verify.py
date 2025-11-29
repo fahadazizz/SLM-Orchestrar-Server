@@ -2,7 +2,7 @@ import requests
 import time
 import sys
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://127.0.0.1:8000"
 
 def test_list_models():
     print("Testing GET /models...")
@@ -21,15 +21,38 @@ def test_run_model(model_id):
     
     # Wait for container to be ready
     print("Waiting for container to be ready...")
+    model_port = None
     for _ in range(30):
         time.sleep(2)
         res = requests.get(f"{BASE_URL}/status")
         statuses = res.json()
         for s in statuses:
             if s["model_id"] == model_id and s["status"] == "running":
-                print("Model is running!")
-                return
-    raise Exception("Model failed to start within timeout")
+                print("Container is running!")
+                model_port = s["port"]
+                break
+        if model_port:
+            break
+    
+    if not model_port:
+        raise Exception("Model container failed to start within timeout")
+
+    # Wait for Model Server to be ready (Application Startup)
+    print(f"Waiting for Model Server on port {model_port} to be ready...")
+    server_ready = False
+    for _ in range(30): # Wait up to 60s for model load
+        try:
+            health_res = requests.get(f"http://127.0.0.1:{model_port}/health")
+            if health_res.status_code == 200:
+                print("Model Server is ready!")
+                server_ready = True
+                break
+        except requests.exceptions.ConnectionError:
+            pass
+        time.sleep(2)
+    
+    if not server_ready:
+        raise Exception("Model Server failed to become ready (Health check failed)")
 
 def test_inference(model_id):
     print(f"Testing POST /inference for {model_id}...")
@@ -52,7 +75,9 @@ if __name__ == "__main__":
     try:
         model_id = test_list_models()
         test_run_model(model_id)
+        print("modle is running")
         test_inference(model_id)
+        print("test successful inference")
         test_stop_model(model_id)
         print("\nAll tests passed!")
     except Exception as e:

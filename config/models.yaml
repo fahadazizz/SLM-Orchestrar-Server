@@ -5,5 +5,5 @@ models:
     repo_id: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     container_config:
       image: "orchestrar-runner:latest"
-      port: 8000
+      port: 8001
       gpu: false

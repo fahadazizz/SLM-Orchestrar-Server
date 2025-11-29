@@ -12,6 +12,10 @@ router = APIRouter()
 model_registry = ModelRegistry()
 docker_service = DockerService()
 
+@router.get("/health")
+def health_check():
+    return {"status": "ok", "service": "orchestrator"}
+
 @router.get("/models", response_model=ModelListResponse)
 def list_models():
     return {"models": model_registry.get_all_models()}
@@ -54,7 +58,7 @@ def inference(request: InferenceRequest):
     
     # 3. Proxy request
     try:
-        url = f"http://localhost:{port}/inference"
+        url = f"http://127.0.0.1:{port}/inference"
         response = requests.post(url, json={"prompt": request.prompt, "max_length": request.max_length})
         response.raise_for_status()
         return InferenceResponse(model_id=request.model_id, response=response.json()["response"])
