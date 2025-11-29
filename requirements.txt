@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+docker
+pyyaml
+pydantic
+requests

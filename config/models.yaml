@@ -1,0 +1,9 @@
+models:
+  - id: "tiny-llama"
+    name: "TinyLlama 1.1B"
+    source: "huggingface"
+    repo_id: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    container_config:
+      image: "orchestrar-runner:latest"
+      port: 8000
+      gpu: false
