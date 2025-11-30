@@ -1,0 +1,18 @@
+# .dockerignore
+__pycache__
+venv/
+env/
+.git
+.idea
+.vscode
+Dockerfile
+docker-compose.yml
+
+# IGNORE MODEL WEIGHTS (Mount these using K8s Volumes instead)
+*.bin
+*.pth
+*.safetensors
+*.gguf
+*.h5
+models/
+data/

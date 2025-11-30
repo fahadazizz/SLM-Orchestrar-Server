@@ -26,12 +26,12 @@ try:
 
     if device == "cuda":
         load_kwargs["device_map"] = "auto"
-        load_kwargs["torch_dtype"] = torch.float16
+        load_kwargs["dtype"] = torch.float16
     else:
         # On CPU, use float32 as float16 might not be supported or slower, 
         # but if memory is tight, we might want to try float16 if supported.
         # For now, stick to float32 for compatibility, but warn user.
-        load_kwargs["torch_dtype"] = torch.float32
+        load_kwargs["dtype"] = torch.float32
         # device_map="auto" with accelerate can help with OOM by offloading
         load_kwargs["device_map"] = "auto"
         load_kwargs["offload_folder"] = "offload"

@@ -40,7 +40,7 @@ def test_run_model(model_id):
     # Wait for Model Server to be ready (Application Startup)
     print(f"Waiting for Model Server on port {model_port} to be ready...")
     server_ready = False
-    for _ in range(30): # Wait up to 60s for model load
+    for _ in range(150): # Wait up to 300s for model load
         try:
             health_res = requests.get(f"http://127.0.0.1:{model_port}/health")
             if health_res.status_code == 200:
@@ -74,6 +74,9 @@ def test_stop_model(model_id):
 
 def test_add_model():
     print("Testing POST /models...")
+    # Cleanup first
+    requests.delete(f"{BASE_URL}/models/test-model")
+    
     new_model = {
         "id": "test-model",
         "name": "Test Model",

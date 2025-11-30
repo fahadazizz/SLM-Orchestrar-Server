@@ -15,3 +15,11 @@ models:
     image: orchestrar-runner:latest
     port: 8002
     gpu: false
+- id: test-model
+  name: Test Model
+  source: huggingface
+  repo_id: Test/Model
+  container_config:
+    image: orchestrar-runner:latest
+    port: 8003
+    gpu: false
