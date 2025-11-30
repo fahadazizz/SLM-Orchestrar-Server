@@ -22,3 +22,24 @@ class ModelRegistry:
             if model.id == model_id:
                 return model
         return None
+
+    def save_models(self):
+        data = {"models": [model.dict() for model in self.models]}
+        with open(self.config_path, "w") as f:
+            yaml.dump(data, f, sort_keys=False)
+
+    def add_model(self, model_config: ModelConfig):
+        # Check if exists
+        if self.get_model(model_config.id):
+            raise ValueError(f"Model with id {model_config.id} already exists")
+        
+        self.models.append(model_config)
+        self.save_models()
+
+    def delete_model(self, model_id: str):
+        model = self.get_model(model_id)
+        if not model:
+            raise ValueError(f"Model with id {model_id} not found")
+        
+        self.models = [m for m in self.models if m.id != model_id]
+        self.save_models()

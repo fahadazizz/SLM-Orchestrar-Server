@@ -3,7 +3,7 @@ from typing import List
 import requests
 from app.schemas import (
     ModelListResponse, RunModelRequest, StopModelRequest, 
-    InferenceRequest, InferenceResponse, ContainerStatus
+    InferenceRequest, InferenceResponse, ContainerStatus, AddModelRequest
 )
 from app.services.model_registry import ModelRegistry
 from app.services.docker_service import DockerService
@@ -19,6 +19,25 @@ def health_check():
 @router.get("/models", response_model=ModelListResponse)
 def list_models():
     return {"models": model_registry.get_all_models()}
+
+@router.post("/models", response_model=AddModelRequest)
+def add_model(request: AddModelRequest):
+    try:
+        model_registry.add_model(request)
+        return request
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/models/{model_id}")
+def delete_model(model_id: str):
+    try:
+        # 1. Remove container
+        docker_service.remove_container(model_id)
+        # 2. Remove from registry
+        model_registry.delete_model(model_id)
+        return {"status": "deleted", "model_id": model_id}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("/run", response_model=ContainerStatus)
 def run_model(request: RunModelRequest):

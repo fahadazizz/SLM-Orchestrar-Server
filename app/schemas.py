@@ -31,6 +31,9 @@ class InferenceResponse(BaseModel):
     model_id: str
     response: str
 
+class AddModelRequest(ModelConfig):
+    pass
+
 class ContainerStatus(BaseModel):
     model_id: str
     status: str

@@ -62,6 +62,17 @@ class DockerService:
             return ContainerStatus(model_id=model_id, status="stopped", container_id=container.id)
         return ContainerStatus(model_id=model_id, status="not_found")
 
+    def remove_container(self, model_id: str) -> ContainerStatus:
+        container = self.get_container_by_model_id(model_id)
+        if container:
+            try:
+                container.stop()
+            except:
+                pass # Might be already stopped
+            container.remove()
+            return ContainerStatus(model_id=model_id, status="removed")
+        return ContainerStatus(model_id=model_id, status="not_found")
+
     def list_running_models(self) -> List[ContainerStatus]:
         containers = self.client.containers.list(filters={"label": "orchestrator.model_id"})
         statuses = []
