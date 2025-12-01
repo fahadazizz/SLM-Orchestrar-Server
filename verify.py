@@ -78,13 +78,14 @@ def test_add_model():
     requests.delete(f"{BASE_URL}/models/test-model")
     
     new_model = {
-        "id": "test-model",
-        "name": "Test Model",
+        "id": "gemma-3-1b-it",
+        "name": "Gemma 3 1B IT (GGUF)",
         "source": "huggingface",
-        "repo_id": "Test/Model",
+        "repo_id": "unsloth/gemma-3-1b-it-GGUF",
+        "filename": "gemma-3-1b-it-Q5_K_M.gguf",
         "container_config": {
             "image": "orchestrar-runner:latest",
-            "port": 8003,
+            "port": 8001,
             "gpu": False
         }
     }
@@ -129,6 +130,7 @@ if __name__ == "__main__":
     try:
         model_id = test_list_models()
         test_add_model()
+        print("added model")
         test_run_model(model_id)
         print("modle is running")
         test_inference(model_id)

@@ -11,6 +11,7 @@ class ModelConfig(BaseModel):
     name: str
     source: str
     repo_id: str
+    filename: Optional[str] = None
     container_config: ContainerConfig
 
 class ModelListResponse(BaseModel):

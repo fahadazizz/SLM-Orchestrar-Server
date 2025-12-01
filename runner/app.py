@@ -1,47 +1,30 @@
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+from llama_cpp import Llama
+from huggingface_hub import hf_hub_download
 
 app = FastAPI()
 
 MODEL_REPO_ID = os.getenv("MODEL_REPO_ID")
+MODEL_FILENAME = os.getenv("MODEL_FILENAME")
+
 if not MODEL_REPO_ID:
     raise ValueError("MODEL_REPO_ID environment variable not set")
 
-print(f"Loading model: {MODEL_REPO_ID}...")
-# Load model and tokenizer
-# Use float16 if GPU is available, else float32
-device = "cuda" if torch.cuda.is_available() else "cpu"
-torch_dtype = torch.float16 if device == "cuda" else torch.float32
+print(f"Initializing model from {MODEL_REPO_ID}...")
 
 try:
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO_ID)
-
-    # Optimize loading
-    load_kwargs = {
-        "low_cpu_mem_usage": True,
-    }
-
-    if device == "cuda":
-        load_kwargs["device_map"] = "auto"
-        load_kwargs["dtype"] = torch.float16
-    else:
-        # On CPU, use float32 as float16 might not be supported or slower, 
-        # but if memory is tight, we might want to try float16 if supported.
-        # For now, stick to float32 for compatibility, but warn user.
-        load_kwargs["dtype"] = torch.float32
-        # device_map="auto" with accelerate can help with OOM by offloading
-        load_kwargs["device_map"] = "auto"
-        load_kwargs["offload_folder"] = "offload"
-
-    print(f"Loading model with kwargs: {load_kwargs}")
-
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_REPO_ID,
-        **load_kwargs
+    # Download model if not present
+    model_path = hf_hub_download(
+        repo_id=MODEL_REPO_ID,
+        filename=MODEL_FILENAME if MODEL_FILENAME else "*Q4_K_M.gguf" # Fallback pattern
     )
+    print(f"Model path: {model_path}")
+
+    # Load model
+    # n_ctx=2048 is default context window, adjust if needed
+    llm = Llama(model_path=model_path, n_ctx=2048, verbose=True)
     print("Model loaded successfully.")
 except Exception as e:
     print(f"Error loading model: {e}")
@@ -54,16 +37,13 @@ class InferenceRequest(BaseModel):
 @app.post("/inference")
 async def inference(request: InferenceRequest):
     try:
-        inputs = tokenizer(request.prompt, return_tensors="pt").to(model.device)
-        outputs = model.generate(
-            **inputs, 
-            max_length=request.max_length, 
-            do_sample=True,
-            top_k=50,
-            top_p=0.95
+        output = llm(
+            request.prompt,
+            max_tokens=request.max_length,
+            stop=["User:", "\n"], # Stop tokens
+            echo=False
         )
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return {"response": generated_text}
+        return {"response": output["choices"][0]["text"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

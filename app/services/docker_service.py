@@ -42,7 +42,10 @@ class DockerService:
                 model_config.container_config.image,
                 detach=True,
                 ports={'8000/tcp': model_config.container_config.port},
-                environment={"MODEL_REPO_ID": model_config.repo_id},
+                environment={
+                    "MODEL_REPO_ID": model_config.repo_id,
+                    "MODEL_FILENAME": model_config.filename or ""
+                },
                 labels={"orchestrator.model_id": model_config.id},
                 name=f"orchestrar-{model_config.id}"
             )
