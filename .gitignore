@@ -2,3 +2,5 @@
 .env
 .env-example
 __pychache__
+app/__pycache__
+app/services/__pycache__

@@ -1,1 +1,10 @@
 models:
+  - id: gemma-3-1b-it
+    name: Gemma 3 1B IT (GGUF)
+    source: huggingface
+    repo_id: unsloth/gemma-3-1b-it-GGUF
+    filename: gemma-3-1b-it-Q5_K_M.gguf
+    container_config:
+      image: orchestrar-runner:latest
+      port: 8001
+      gpu: false
