@@ -12,15 +12,15 @@ router = APIRouter()
 model_registry = ModelRegistry()
 docker_service = DockerService()
 
-@router.get("/health")
+@router.get("/orchestrar/health")
 def health_check():
     return {"status": "ok", "service": "orchestrator"}
 
-@router.get("/models", response_model=ModelListResponse)
+@router.get("/orchestrar/listModels", response_model=ModelListResponse)
 def list_models():
     return {"models": model_registry.get_all_models()}
 
-@router.post("/models", response_model=AddModelRequest)
+@router.post("/orchestrar/addModels", response_model=AddModelRequest)
 def add_model(request: AddModelRequest):
     try:
         model_registry.add_model(request)
@@ -28,7 +28,7 @@ def add_model(request: AddModelRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/models/{model_id}")
+@router.delete("/orchestrar/deleteModels/{model_id}")
 def delete_model(model_id: str):
     try:
         # 1. Remove container
@@ -39,29 +39,30 @@ def delete_model(model_id: str):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.post("/run", response_model=ContainerStatus)
+@router.post("/orchestrar/runModel", response_model=ContainerStatus)
 def run_model(request: RunModelRequest):
     model_config = model_registry.get_model(request.model_id)
     if not model_config:
         raise HTTPException(status_code=404, detail="Model not found")
     
+    print("model config", model_config)
     status = docker_service.start_container(model_config)
     if "error" in status.status:
         raise HTTPException(status_code=500, detail=status.status)
     return status
 
-@router.post("/stop", response_model=ContainerStatus)
+@router.post("/orchestrar/stop", response_model=ContainerStatus)
 def stop_model(request: StopModelRequest):
     status = docker_service.stop_container(request.model_id)
     if status.status == "not_found":
         raise HTTPException(status_code=404, detail="Container not found")
     return status
 
-@router.get("/status", response_model=List[ContainerStatus])
+@router.get("/orchestrar/status", response_model=List[ContainerStatus])
 def get_status():
     return docker_service.list_running_models()
 
-@router.post("/inference", response_model=InferenceResponse)
+@router.post("/orchestrar/inference", response_model=InferenceResponse)
 def inference(request: InferenceRequest):
     # 1. Check if model is running
     container = docker_service.get_container_by_model_id(request.model_id)
@@ -77,7 +78,7 @@ def inference(request: InferenceRequest):
     
     # 3. Proxy request
     try:
-        url = f"http://127.0.0.1:{port}/inference"
+        url = f"http://127.0.0.1:{port}/docker/inference"
         response = requests.post(url, json={"prompt": request.prompt, "max_length": request.max_length})
         response.raise_for_status()
         return InferenceResponse(model_id=request.model_id, response=response.json()["response"])

@@ -14,6 +14,8 @@ class DockerService:
 
     def start_container(self, model_config: ModelConfig) -> ContainerStatus:
         container = self.get_container_by_model_id(model_config.id)
+        print("model id", model_config.id)
+        print("model source", model_config.source)
         
         if container:
             if container.status != "running":
